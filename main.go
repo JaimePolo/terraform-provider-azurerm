@@ -1,7 +1,7 @@
 package main
 
 import (
-	`log`
+	"log"
 
 	"github.com/hashicorp/terraform/plugin"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm"

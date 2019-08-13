@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/hashicorp/go-azure-helpers/authentication"
@@ -15,7 +14,6 @@ import (
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/suppress"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/helpers/validate"
 	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/internal/flags"
-	"github.com/terraform-providers/terraform-provider-azurerm/azurerm/utils"
 )
 
 // Provider returns a terraform.ResourceProvider.
@@ -41,16 +39,9 @@ func Provider() terraform.ResourceProvider {
 			},
 
 			"auxiliary_tenant_ids": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem:     &schema.Schema{Type: schema.TypeString},
-				DefaultFunc: func() (interface{}, error) {
-					if v := os.Getenv("ARM_AUXILIARY_TENANT_IDS"); v != "" {
-						return strings.Split(v, ";"), nil
-					}
-
-					return nil, nil
-				},
+				Type:        schema.TypeString, // Can we make this work with a TypeList?
+				Optional:    true,
+				DefaultFunc: schema.EnvDefaultFunc("ARM_AUXILIARY_TENANT_IDS", ""),
 			},
 
 			"environment": {
@@ -478,12 +469,14 @@ func Provider() terraform.ResourceProvider {
 func providerConfigure(p *schema.Provider) schema.ConfigureFunc {
 	return func(d *schema.ResourceData) (interface{}, error) {
 
+		auxTenants := strings.Split(d.Get("auxiliary_tenant_ids").(string), ";")
+
 		authBuilder := &authentication.Builder{
 			SubscriptionID:     d.Get("subscription_id").(string),
 			ClientID:           d.Get("client_id").(string),
 			ClientSecret:       d.Get("client_secret").(string),
 			TenantID:           d.Get("tenant_id").(string),
-			AuxiliaryTenantIDs: *utils.ExpandStringSlice(d.Get("auxiliary_tenant_ids").([]interface{})),
+			AuxiliaryTenantIDs: auxTenants,
 			Environment:        d.Get("environment").(string),
 			MsiEndpoint:        d.Get("msi_endpoint").(string),
 			ClientCertPassword: d.Get("client_certificate_password").(string),
